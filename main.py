@@ -1,3 +1,7 @@
+#set path for packages
+import sys
+sys.path.insert(0,"/work/pip")
+
 # torch
 import torch
 import torch.nn as nn
@@ -73,6 +77,8 @@ def parse_cli(params):
     # model
     parser.add_argument('--pretrained', type=bool, default=params['pretrained'], metavar='PT',
                         help='whether to use the pretrained weight (default: ' + str(params['pretrained']) + ')')
+    parser.add_argument('--fixed', type=bool, default=params['fixed'], metavar='F',
+                        help='whether to fix conv layers in pretrained model (default: ' + str(params['fixed']) + ')')
 
     # hyperparameters
     parser.add_argument('--lr', type=float, default=params['init_learning_rate'], metavar='LR',
@@ -100,10 +106,10 @@ def parse_cli(params):
     parser.add_argument('--workers', type=int, default=0, metavar='W',
                         help='workers (default: 0)')
 
-    parser.add_argument('--train_dir', default="../data/", type=str, metavar='PATHT',
+    parser.add_argument('--train_dir', default="./data/", type=str, metavar='PATHT',
                         help='path to the training files (default: data folder)')
 
-    parser.add_argument('--val_dir', default="../data/", type=str, metavar='PATHV',
+    parser.add_argument('--val_dir', default="./data/", type=str, metavar='PATHV',
                         help='path to the validation files (default: data folder)')   
 
     args = parser.parse_args()
@@ -129,14 +135,15 @@ train_loader = torch.utils.data.DataLoader(CheXpertDataset(train_dir+"CheXpert-v
 valid_loader = torch.utils.data.DataLoader(CheXpertDataset(val_dir+"CheXpert-v1.0-small/valid.csv", val_dir, transform=validation_transform), batch_size=args.batch_size, shuffle=False)    
                                                          
 # to make the model
-model = make_model(pretrained=args.pretrained)
+model = make_model(pretrained=args.pretrained, fixed=args.fixed)
 
 # put model into the correspoinding device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 # define optimizer
-optimizer = optim.Adam(model.parameters(), lr=args.lr, betas=(args.beta1, args.beta2), eps=args.epsilon)
+optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), 
+                       lr=args.lr, betas=(args.beta1, args.beta2), eps=args.epsilon)
 
 # define scheduler
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.1, patience=2, verbose=True)

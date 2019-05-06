@@ -63,7 +63,7 @@ class CheXpertDataset(Dataset):
         
         # since the input to pre-trained network should have 3 channels
         # we need to pad it with two repeatition
-        image = np.repeat(image[None,...], 3, axis=0)
+        image = np.repeat(image[None,...], 3, axis=0).transpose(1,2,0)
         
         # transform the image if transform is not None
         if self.transform:

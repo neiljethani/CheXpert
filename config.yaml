@@ -5,6 +5,7 @@ init_learning_rate: 0.01
 
 # model
 pretrained: True
+fixed: True
 
 # Adam
 beta1: 0.9
